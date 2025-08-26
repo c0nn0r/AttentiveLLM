@@ -65,3 +65,78 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Running (single camera + single device)
+
+Terminal A (GPIO/mouse TCP server):
+```bash
+# for camera/device 1
+python button2.py
+```
+• Listens on TCP :5000 and clicks GPIO 18 on play/pause.
+
+Terminal B (head-pose detector):
+```bash
+python head_pose.py
+```
+• Defaults to webcam index 0 and connects to TCP localhost:5000.
+
+• Shows a preview with FPS and “Looking at Camera” status, plus hotkeys to tweak thresholds and calibration.
+
+
+## Running (two cameras + two devices)
+
+Terminal A (first device):
+```bash
+python button2.py
+```
+• Port 5000, GPIO 18.
+
+Terminal B (second device):
+```bash
+python button2_cam2.py
+```
+• Port 5001, GPIO 13.
+
+Terminal C (head-pose for camera 1):
+```bash
+python head_pose.py
+```
+• Uses camera index 0, connects to 5000.
+
+Terminal D (head-pose for camera 2):
+```bash
+python head_pose_cam2.py
+```
+• Uses camera index 2, connects to 5001.
+
+## Calibration & thresholds (runtime hotkeys)
+
+While the head-pose window is focused:
+
+- `R` — reset calibration  
+- `1` / `2` — decrease / increase **left yaw** threshold  
+- `3` / `4` — decrease / increase **right yaw** threshold  
+- `5` / `6` — decrease / increase **pitch** threshold  
+- `T` — run built-in test cases  
+- `D` — debug current values  
+- `ESC` — quit  
+
+These are logged/overlaid in the OpenCV window.  
+**Defaults:** left/right = `6°`, pitch = `8°`.
+
+## Head-pose details (what “looking at camera” means)
+
+• MediaPipe Face Mesh landmarks → 2D/3D sets → solvePnP to estimate yaw/pitch.
+
+• If yaw ∈ (−left_thresh, +right_thresh) and pitch ∈ (−thr, +thr), we treat it as FORWARD (eye-contact proxy). Otherwise LEFT/RIGHT/UP/DOWN.
+
+• More landmarks are used for robustness; focal length uses the larger image dimension.
+
+
+## Troubleshooting
+
+• No click: verify TCP connectivity and ports (5000/5001) and that the head-pose script prints “Connected to TCP server …”.
+
+• GPIO not doing anything: confirm correct BCM pin (18/13 by default) and that the mouse pads are wired to GND and the selected GPIO.
+
+• False triggers: increase yaw/pitch thresholds (1..6 keys) or re-run calibration
